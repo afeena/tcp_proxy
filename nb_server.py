@@ -73,7 +73,7 @@ class Handler(threading.Thread):
                     if not data:
                         raise ConnectionResetError()
 
-                    send_sock.send(data)
+                    send_sock.sendall(data)
 
                 except ConnectionResetError:
 
@@ -94,7 +94,7 @@ class Handler(threading.Thread):
     def _del(self, socket_):
         paired = self.sockets.pop(socket_.fileno())
         del self.sockets[paired.fileno()]
-
+        
         socket_.close()
         paired.close()
 
