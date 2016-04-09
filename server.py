@@ -3,6 +3,7 @@ import threading
 
 
 class Server:
+
     def __init__(self, host='', port=9999, proxy_host='localhost', proxy_port=7979):
         self.host = host
         self.port = port
@@ -23,17 +24,20 @@ class Server:
                 outcoming_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 outcoming_sock.connect((self.proxy_host, self.proxy_port))
 
-                proxies = [
-                    threading.Thread(target=self.handler, args=(outcoming_sock, incoming_sock)),
-                    threading.Thread(target=self.handler, args=(incoming_sock, outcoming_sock)),
-                ]
-
-                for proxy in proxies:
-                    proxy.start()
+                self.run_proxies(outcoming_sock, incoming_sock)
 
             except OSError as msg:
                 print("Could not connect to remote, error: %s" % msg)
                 incoming_sock.close()
+
+    def run_proxies(self, out_sock, in_sock):
+        proxies = [
+            threading.Thread(target=self.handler, args=(out_sock, in_sock)),
+            threading.Thread(target=self.handler, args=(in_sock, out_sock)),
+        ]
+
+        for proxy in proxies:
+            proxy.start()
 
     @staticmethod
     def handler(recv_sock, send_sock):
@@ -43,12 +47,8 @@ class Server:
                 if not data:
                     send_sock.shutdown(socket.SHUT_RDWR)
                     break
-                send_sock.send(data)
+                send_sock.sendall(data)
 
         finally:
             print("Close connection")
             recv_sock.close()
-
-
-serv = Server()
-serv.serve_forever()
